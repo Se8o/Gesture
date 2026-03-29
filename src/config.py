@@ -45,6 +45,6 @@ if os.path.exists(_settings_file):
         PREDICTION_THRESHOLD  = float(_s.get("prediction_threshold",  PREDICTION_THRESHOLD))
         GESTURE_COOLDOWN      = float(_s.get("gesture_cooldown",      GESTURE_COOLDOWN))
         del _s
-    except Exception:
-        pass  # silently fall back to defaults
+    except Exception:  # nosec B110 — intentional: malformed settings.json must not crash the app
+        pass
 del _settings_file, _json

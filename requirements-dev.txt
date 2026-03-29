@@ -1,0 +1,6 @@
+# Dev / CI dependencies — not needed to run the app
+pytest>=7.4.0
+pytest-cov>=4.1.0
+bandit[toml]>=1.7.6
+pip-audit>=2.6.0
+flake8>=6.1.0
