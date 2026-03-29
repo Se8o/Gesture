@@ -30,3 +30,21 @@ PREDICTION_THRESHOLD = 0.75
 # Minimální prodleva (v sekundách) mezi dvěma po sobě jdoucími akcemi
 # stejného gesta. Brání opakovanému spouštění jedné klávesy při klidném držení ruky.
 GESTURE_COOLDOWN = 1.0
+
+# ----- Settings override (written by setup_gui.py) -----
+# If settings.json exists in the project root, its values take precedence.
+import json as _json
+_settings_file = os.path.join(BASE_DIR, "settings.json")
+if os.path.exists(_settings_file):
+    try:
+        with open(_settings_file) as _f:
+            _s = _json.load(_f)
+        CAMERA_INDEX          = int(_s.get("camera_index",         CAMERA_INDEX))
+        DETECTION_CONFIDENCE  = float(_s.get("detection_confidence",  DETECTION_CONFIDENCE))
+        TRACKING_CONFIDENCE   = float(_s.get("tracking_confidence",   TRACKING_CONFIDENCE))
+        PREDICTION_THRESHOLD  = float(_s.get("prediction_threshold",  PREDICTION_THRESHOLD))
+        GESTURE_COOLDOWN      = float(_s.get("gesture_cooldown",      GESTURE_COOLDOWN))
+        del _s
+    except Exception:
+        pass  # silently fall back to defaults
+del _settings_file, _json
