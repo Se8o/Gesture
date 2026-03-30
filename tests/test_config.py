@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-import src.config as cfg
+import gesture.config as cfg
 
 
 # ── Default values ─────────────────────────────────────────────────────────────

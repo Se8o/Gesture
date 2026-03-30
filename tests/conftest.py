@@ -55,7 +55,7 @@ def synthetic_csv(tmp_path, synthetic_df) -> Path:
 @pytest.fixture
 def mock_keyboard():
     """Patch pynput's keyboard controller so no real key-presses happen."""
-    with patch("src.controller.KeyboardController") as cls_mock:
+    with patch("gesture.controller.KeyboardController") as cls_mock:
         instance = MagicMock()
         cls_mock.return_value = instance
         yield instance

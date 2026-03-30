@@ -7,14 +7,14 @@ from unittest.mock import call, patch
 import pytest
 from pynput.keyboard import Key
 
-from src.controller import GestureController
+from gesture.controller import GestureController
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def make_controller(cooldown=1.0):
     """Create a GestureController with a mocked keyboard."""
-    with patch("src.controller.KeyboardController") as cls_mock:
+    with patch("gesture.controller.KeyboardController") as cls_mock:
         ctrl = GestureController(cooldown=cooldown)
         ctrl._keyboard = cls_mock.return_value   # expose mock for assertions
         return ctrl
@@ -68,7 +68,7 @@ class TestCooldown:
         ctrl.execute("posun nahoru")
 
         # Fast-forward time past the cooldown
-        monkeypatch.setattr("src.controller.time.time",
+        monkeypatch.setattr("gesture.controller.time.time",
                             lambda: ctrl._last_time + 1.1)
 
         assert ctrl.execute("posun nahoru") is True

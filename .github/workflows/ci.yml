@@ -24,7 +24,7 @@ jobs:
         run: pip install flake8
 
       - name: Run flake8
-        run: flake8 src/ train.py run.py setup_gui.py
+        run: flake8 gesture/ ml/ gui/ run.py
 
   # ── 2. Security: static analysis ────────────────────────────────────────────
   bandit:
@@ -42,7 +42,7 @@ jobs:
         run: pip install "bandit[toml]"
 
       - name: Run bandit
-        run: bandit -r src/ train.py setup_gui.py -c pyproject.toml
+        run: bandit -r gesture/ ml/ gui/ -c pyproject.toml
 
   # ── 3. Security: dependency vulnerabilities ──────────────────────────────────
   pip-audit:
@@ -60,7 +60,6 @@ jobs:
         run: pip install pip-audit
 
       - name: Audit dependencies
-        # --no-deps: audit only what's listed, not transitive deps resolved from scratch
         run: pip-audit -r requirements.txt
 
   # ── 4. Tests ─────────────────────────────────────────────────────────────────
@@ -94,14 +93,13 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
-      # Train a model so app-level tests that need model files can use it
       - name: Train model (used by integration tests)
-        run: python train.py
+        run: python ml/train.py
 
       - name: Run tests with coverage
         run: |
           pytest tests/ \
-            --cov=src --cov=train --cov=setup_gui \
+            --cov=gesture --cov=ml --cov=gui \
             --cov-report=term-missing \
             --cov-report=xml:coverage.xml
 

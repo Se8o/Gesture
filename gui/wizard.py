@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Gesture Remote Controller — Setup & Configuration GUI
+Gesture Remote Controller — Průvodce nastavením (Setup Wizard)
 
-Run this before launching the app for the first time:
-    python setup_gui.py
+Spuštění:
+    python gui/wizard.py
 """
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -13,14 +13,14 @@ import sys
 import threading
 from pathlib import Path
 
-# ── Paths ──────────────────────────────────────────────────────────────────────
-ROOT           = Path(__file__).parent
+# ── Cesty ─────────────────────────────────────────────────────────────────────
+ROOT           = Path(__file__).parent.parent          # Gesture/
 SETTINGS_FILE  = ROOT / "settings.json"
 MODELS_DIR     = ROOT / "models"
 DATA_FILE      = ROOT / "data" / "dataset.csv"
-TRAIN_SCRIPT   = ROOT / "train.py"
+TRAIN_SCRIPT   = ROOT / "ml" / "train.py"
 RUN_SCRIPT     = ROOT / "run.py"
-COLLECT_SCRIPT = ROOT / "scripts" / "collect_data.py"
+COLLECT_SCRIPT = ROOT / "ml" / "collect.py"
 
 REQUIRED_MODELS = ["model.pkl", "scaler.pkl", "label_encoder.pkl"]
 
@@ -32,7 +32,7 @@ DEFAULTS: dict = {
     "gesture_cooldown":     1.0,
 }
 
-# ── Colour palette ─────────────────────────────────────────────────────────────
+# ── Barevná paleta ─────────────────────────────────────────────────────────────
 BG      = "#f1f5f9"
 SURFACE = "#ffffff"
 SURF2   = "#f8fafc"
@@ -53,7 +53,7 @@ FONT        = "Helvetica Neue"
 FONT_MONO   = "Menlo"
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+# ── Pomocné funkce ─────────────────────────────────────────────────────────────
 
 def load_settings() -> dict:
     try:
@@ -74,7 +74,7 @@ def data_ready() -> bool:
     return DATA_FILE.exists()
 
 
-# ── Main GUI ───────────────────────────────────────────────────────────────────
+# ── Hlavní GUI ─────────────────────────────────────────────────────────────────
 
 class SetupGUI:
     WIDTH = 500
@@ -93,7 +93,7 @@ class SetupGUI:
         self._center()
         self._refresh_status()
 
-    # ── Window helpers ─────────────────────────────────────────────────────────
+    # ── Pomocné metody okna ────────────────────────────────────────────────────
 
     def _center(self) -> None:
         self.root.update_idletasks()
@@ -103,20 +103,18 @@ class SetupGUI:
         y = (self.root.winfo_screenheight() - h) // 2
         self.root.geometry(f"+{x}+{y}")
 
-    # ── Widget factories ───────────────────────────────────────────────────────
+    # ── Továrny widgetů ────────────────────────────────────────────────────────
 
     def _card(self, parent: tk.Widget, title: str, icon: str = "") -> tk.Frame:
-        """White rounded card with a header. Returns the body frame."""
+        """Bílá karta s nadpisem. Vrátí vnitřní frame."""
         outer = tk.Frame(parent, bg=BG)
         outer.pack(fill="x", padx=16, pady=(0, 10))
 
-        # 1-px border via wrapper
         border = tk.Frame(outer, bg=BORDER2)
         border.pack(fill="x")
         inner = tk.Frame(border, bg=SURFACE)
         inner.pack(fill="x", padx=1, pady=1)
 
-        # Header strip
         head = tk.Frame(inner, bg=SURF2)
         head.pack(fill="x")
         label = f"  {icon}  {title}" if icon else f"  {title}"
@@ -143,7 +141,7 @@ class SetupGUI:
     def _slider_row(self, parent: tk.Widget, label: str, key: str,
                     from_: float, to: float, step: float,
                     fmt: str = "{:.2f}") -> tk.DoubleVar:
-        """Labelled ttk slider with a live value readout."""
+        """Slider s popiskem a živým výpisem hodnoty."""
         frame = tk.Frame(parent, bg=SURFACE)
         frame.pack(fill="x", pady=(0, 10))
 
@@ -164,7 +162,6 @@ class SetupGUI:
                            command=lambda v: val_lbl.config(text=fmt.format(float(v))))
         slider.pack(fill="x", pady=(3, 0))
 
-        # Snap to step on mouse release
         def _snap(_event=None):
             snapped = round(var.get() / step) * step
             snapped = max(from_, min(to, snapped))
@@ -174,12 +171,12 @@ class SetupGUI:
         slider.bind("<ButtonRelease-1>", _snap)
         return var
 
-    # ── Build ──────────────────────────────────────────────────────────────────
+    # ── Sestavení GUI ──────────────────────────────────────────────────────────
 
     def _build(self) -> None:
         root = self.root
 
-        # ── Header ────────────────────────────────────────────────────────────
+        # Záhlaví
         hdr = tk.Frame(root, bg=ACCENT)
         hdr.pack(fill="x")
 
@@ -192,11 +189,11 @@ class SetupGUI:
             font=(FONT, 10), bg=ACCENT, fg="#c7d2fe", pady=6,
         )
         self._status_badge.pack()
-        tk.Frame(hdr, bg=ACCENT, height=12).pack()   # padding
+        tk.Frame(hdr, bg=ACCENT, height=12).pack()
 
         tk.Frame(root, bg=BG, height=12).pack()
 
-        # ── Camera ────────────────────────────────────────────────────────────
+        # Kamera
         cam_body = self._card(root, "Camera", "📷")
 
         cam_var = tk.IntVar(value=int(self._settings.get("camera_index", 0)))
@@ -214,7 +211,7 @@ class SetupGUI:
                 highlightthickness=0,
             ).grid(row=i // 2, column=i % 2, sticky="w", padx=(0, 28), pady=2)
 
-        # ── Detection Parameters ───────────────────────────────────────────────
+        # Parametry detekce
         det_body = self._card(root, "Detection Parameters", "🎯")
 
         self._slider_row(det_body, "Hand Detection Confidence",
@@ -226,7 +223,7 @@ class SetupGUI:
         self._slider_row(det_body, "Gesture Cooldown (seconds)",
                          "gesture_cooldown",     0.1,  3.0, 0.1, fmt="{:.1f} s")
 
-        # ── Model Status ───────────────────────────────────────────────────────
+        # Stav modelu
         self._model_body = self._card(root, "Model Status", "🤖")
 
         self._model_rows = tk.Frame(self._model_body, bg=SURFACE)
@@ -251,7 +248,7 @@ class SetupGUI:
         tk.Label(btns, text=hint_text,
                  font=(FONT, 9), bg=SURFACE, fg=hint_color).pack(side="left", padx=10)
 
-        # ── Output Log ────────────────────────────────────────────────────────
+        # Log výstupu
         log_body = self._card(root, "Output Log", "📋")
 
         self._log = tk.Text(
@@ -269,7 +266,7 @@ class SetupGUI:
         self._log.tag_config("info", foreground="#60a5fa")
         self._log.tag_config("cmd",  foreground="#fbbf24")
 
-        # ── Footer ────────────────────────────────────────────────────────────
+        # Zápatí
         foot = tk.Frame(root, bg=BG)
         foot.pack(fill="x", padx=16, pady=(4, 20))
 
@@ -292,7 +289,7 @@ class SetupGUI:
                        self._collect).pack(side="left", fill="x",
                                            expand=True, padx=(4, 0))
 
-    # ── Model status ───────────────────────────────────────────────────────────
+    # ── Stav modelu ────────────────────────────────────────────────────────────
 
     def _rebuild_model_rows(self) -> None:
         for w in self._model_rows.winfo_children():
@@ -313,7 +310,7 @@ class SetupGUI:
             self._status_var.set("⚠  Model not trained — click Train Model first")
             self._status_badge.config(fg="#fde68a")
 
-    # ── Log helpers ────────────────────────────────────────────────────────────
+    # ── Pomocné metody logu ────────────────────────────────────────────────────
 
     def _log_write(self, msg: str, tag: str = "") -> None:
         self._log.configure(state="normal")
@@ -321,7 +318,7 @@ class SetupGUI:
         self._log.see("end")
         self._log.configure(state="disabled")
 
-    # ── Actions ────────────────────────────────────────────────────────────────
+    # ── Akce ──────────────────────────────────────────────────────────────────
 
     def _collect_settings(self) -> dict:
         s = {}
@@ -410,7 +407,7 @@ class SetupGUI:
             cwd=str(ROOT),
         )
 
-    # ── Run ────────────────────────────────────────────────────────────────────
+    # ── Spuštění ───────────────────────────────────────────────────────────────
 
     def run(self) -> None:
         self.root.mainloop()

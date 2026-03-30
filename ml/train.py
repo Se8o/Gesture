@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-Lokální skript pro trénování ML modelu z nasbíraných dat.
+Trénování ML modelu z nasbíraných dat.
 
-Čte:    data/dataset.csv
+Čte:      data/dataset.csv
 Zapisuje: models/model.pkl
           models/scaler.pkl
           models/label_encoder.pkl
 
-Spuštění:
-    python train.py
+Spuštění (z kořenového adresáře projektu):
+    python ml/train.py
 """
 import os
 import sys
@@ -20,8 +20,8 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import accuracy_score, classification_report
 import joblib
 
-# Absolutní cesty odvozené od umístění tohoto souboru
-ROOT      = os.path.dirname(os.path.abspath(__file__))
+# Kořenový adresář projektu (o dvě úrovně výše: ml/ → Gesture/)
+ROOT      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(ROOT, "data", "dataset.csv")
 MODEL_DIR = os.path.join(ROOT, "models")
 

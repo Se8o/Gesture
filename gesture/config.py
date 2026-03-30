@@ -31,6 +31,14 @@ PREDICTION_THRESHOLD = 0.75
 # stejného gesta. Brání opakovanému spouštění jedné klávesy při klidném držení ruky.
 GESTURE_COOLDOWN = 1.0
 
+# Režim ovládání:
+#   "scroll"   – gesta rolují stránkou myší (vhodné pro běh na pozadí, nahrazuje trackpad)
+#   "keyboard" – gesta odesílají šipkové klávesy (vhodné pro prezentace, videopřehrávač)
+CONTROL_MODE = "scroll"
+
+# Počet jednotek scrollu na jedno gesto (platí pouze pro CONTROL_MODE="scroll")
+SCROLL_AMOUNT = 5
+
 # ----- Settings override (written by setup_gui.py) -----
 # If settings.json exists in the project root, its values take precedence.
 import json as _json
@@ -44,6 +52,8 @@ if os.path.exists(_settings_file):
         TRACKING_CONFIDENCE   = float(_s.get("tracking_confidence",   TRACKING_CONFIDENCE))
         PREDICTION_THRESHOLD  = float(_s.get("prediction_threshold",  PREDICTION_THRESHOLD))
         GESTURE_COOLDOWN      = float(_s.get("gesture_cooldown",      GESTURE_COOLDOWN))
+        CONTROL_MODE          = str(_s.get("control_mode",            CONTROL_MODE))
+        SCROLL_AMOUNT         = int(_s.get("scroll_amount",           SCROLL_AMOUNT))
         del _s
     except Exception:  # nosec B110 — intentional: malformed settings.json must not crash the app
         pass

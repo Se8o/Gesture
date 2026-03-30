@@ -6,10 +6,10 @@ Poznámka: Skript používá nové MediaPipe Tasks API (verze 0.10+),
           které nahradilo starší mp.solutions rozhraní.
 
 Spuštění (z kořenového adresáře projektu):
-    python scripts/collect_data.py "posun nahoru"
-    python scripts/collect_data.py "posun dolu"
-    python scripts/collect_data.py "posun doprava"
-    python scripts/collect_data.py "posun doleva"
+    python ml/collect.py "posun nahoru"
+    python ml/collect.py "posun dolu"
+    python ml/collect.py "posun doprava"
+    python ml/collect.py "posun doleva"
 
 Ovládání:
   's' ... začít/zastavit nahrávání snímků do CSV
@@ -29,7 +29,7 @@ import time
 #  Zpracování argumentu příkazové řádky
 # ============================================================
 
-# Název gesta lze zadat jako argument: python scripts/collect_data.py "posun nahoru"
+# Název gesta lze zadat jako argument: python ml/collect.py "posun nahoru"
 # Pokud argument není zadán, použije se výchozí hodnota.
 if len(sys.argv) >= 2:
     NAZEV_GESTA = sys.argv[1]
@@ -41,7 +41,7 @@ else:
 # ============================================================
 
 # Kořenový adresář projektu je o dvě úrovně výše než tento skript
-# (Gesture/scripts/collect_data.py → Gesture/)
+# (Gesture/ml/collect.py → Gesture/)
 ROOT_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Cesta k předtrénovanému modelu detekce ruky

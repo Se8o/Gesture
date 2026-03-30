@@ -1,9 +1,9 @@
 [tool.pytest.ini_options]
-testpaths   = ["tests"]
-addopts     = "-v --tb=short"
+testpaths = ["tests"]
+addopts   = "-v --tb=short"
 
 [tool.coverage.run]
-source = ["src", "train", "setup_gui"]
+source = ["gesture", "ml", "gui"]
 omit   = ["*/venv/*", "*/tests/*", "*/__pycache__/*"]
 
 [tool.coverage.report]
@@ -11,7 +11,12 @@ show_missing = true
 skip_empty   = true
 
 [tool.bandit]
-exclude_dirs = ["venv", "tests", "notebook"]
-# B603: subprocess without shell=True is safe when args are a list of trusted values
-# B404: importing subprocess is expected in a launcher script
+exclude_dirs = ["venv", "tests", "notebooks"]
+# B603: subprocess bez shell=True je bezpečné, pokud jsou argumenty seznam důvěryhodných hodnot
+# B404: import subprocess je očekávaný ve spouštěcích skriptech
 skips = ["B603", "B404"]
+
+[tool.flake8]
+max-line-length = 100
+extend-ignore   = ["E203", "W503", "E501"]
+exclude         = ["venv", "__pycache__", ".git", "notebooks"]

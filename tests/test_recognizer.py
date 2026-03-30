@@ -32,13 +32,13 @@ def recognizer(mock_ml_models):
     mock_mp_vision.RunningMode.VIDEO = "VIDEO"
 
     with (
-        patch("src.recognizer.joblib.load", side_effect=[model, scaler, encoder]),
-        patch("src.recognizer.mp",          mock_mp),
-        patch("src.recognizer.mp_python",   mock_mp_python),
-        patch("src.recognizer.mp_vision",   mock_mp_vision),
+        patch("gesture.recognizer.joblib.load", side_effect=[model, scaler, encoder]),
+        patch("gesture.recognizer.mp",          mock_mp),
+        patch("gesture.recognizer.mp_python",   mock_mp_python),
+        patch("gesture.recognizer.mp_vision",   mock_mp_vision),
     ):
-        from src.recognizer import GestureRecognizer
-        importlib.reload(importlib.import_module("src.recognizer"))
+        from gesture.recognizer import GestureRecognizer
+        importlib.reload(importlib.import_module("gesture.recognizer"))
         rec = GestureRecognizer.__new__(GestureRecognizer)
         rec.model    = model
         rec.scaler   = scaler
@@ -60,8 +60,8 @@ class TestNoHand:
 
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
 
-        with patch("src.recognizer.mp.Image"), \
-             patch("src.recognizer.time.time", return_value=1.0):
+        with patch("gesture.recognizer.mp.Image"), \
+             patch("gesture.recognizer.time.time", return_value=1.0):
             gesture, conf, landmarks = rec.process(frame)
 
         assert gesture    is None
@@ -85,8 +85,8 @@ class TestLowConfidence:
 
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
 
-        with patch("src.recognizer.mp.Image"), \
-             patch("src.recognizer.time.time", return_value=1.0):
+        with patch("gesture.recognizer.mp.Image"), \
+             patch("gesture.recognizer.time.time", return_value=1.0):
             gesture, conf, landmarks = rec.process(frame)
 
         assert gesture is None
@@ -102,8 +102,8 @@ class TestLowConfidence:
         detector.detect_for_video.return_value = result
 
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        with patch("src.recognizer.mp.Image"), \
-             patch("src.recognizer.time.time", return_value=1.0):
+        with patch("gesture.recognizer.mp.Image"), \
+             patch("gesture.recognizer.time.time", return_value=1.0):
             _, conf, _ = rec.process(frame)
 
         assert conf == pytest.approx(0.6)
@@ -124,8 +124,8 @@ class TestHighConfidence:
         detector.detect_for_video.return_value = result
 
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        with patch("src.recognizer.mp.Image"), \
-             patch("src.recognizer.time.time", return_value=1.0):
+        with patch("gesture.recognizer.mp.Image"), \
+             patch("gesture.recognizer.time.time", return_value=1.0):
             gesture, conf, landmarks = rec.process(frame)
 
         assert gesture   == "posun nahoru"
@@ -144,8 +144,8 @@ class TestHighConfidence:
         detector.detect_for_video.return_value = result
 
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        with patch("src.recognizer.mp.Image"), \
-             patch("src.recognizer.time.time", return_value=1.0):
+        with patch("gesture.recognizer.mp.Image"), \
+             patch("gesture.recognizer.time.time", return_value=1.0):
             rec.process(frame)
 
         encoder.inverse_transform.assert_called_once_with([2])
@@ -165,8 +165,8 @@ class TestFeatureExtraction:
         detector.detect_for_video.return_value = result
 
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        with patch("src.recognizer.mp.Image"), \
-             patch("src.recognizer.time.time", return_value=1.0):
+        with patch("gesture.recognizer.mp.Image"), \
+             patch("gesture.recognizer.time.time", return_value=1.0):
             rec.process(frame)
 
         called_features = scaler.transform.call_args[0][0]

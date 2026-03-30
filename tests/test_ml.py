@@ -1,10 +1,8 @@
 """
-Tests for train.py — the model training pipeline.
+Tests for ml/train.py — the model training pipeline.
 
 Uses a small synthetic dataset so tests run in seconds, not minutes.
 """
-import importlib
-import sys
 from pathlib import Path
 from unittest.mock import patch
 
@@ -15,15 +13,15 @@ import pytest
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
+from ml import train
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def run_train(data_path: Path, model_dir: Path):
     """
     Run train.train() with DATA_PATH and MODEL_DIR redirected to temp dirs.
-    Reloads the module each call so monkeypatching is reliable.
     """
-    import train
     with (
         patch.object(train, "DATA_PATH", str(data_path)),
         patch.object(train, "MODEL_DIR", str(model_dir)),
@@ -86,10 +84,7 @@ class TestTrainPipeline:
         assert acc > 0.70, f"Accuracy too low: {acc:.2%}"
 
     def test_scaler_fit_only_on_train_not_full_dataset(self, synthetic_csv, tmp_path):
-        """
-        The scaler must be fit on training data only.
-        We verify it transforms 63-feature vectors without error.
-        """
+        """The scaler must be fit on training data only."""
         run_train(synthetic_csv, tmp_path)
         scaler = joblib.load(tmp_path / "scaler.pkl")
         sample = np.random.rand(1, 63)
@@ -118,15 +113,14 @@ class TestTrainErrors:
     def test_handles_csv_with_nan_rows(self, tmp_path):
         """NaN rows should be silently dropped, not cause a crash."""
         df = pd.read_csv(
-            # Use real dataset path as template
             Path(__file__).parent.parent / "data" / "dataset.csv",
             nrows=50,
         )
-        df.iloc[0, 3] = float("nan")   # introduce one NaN
+        df.iloc[0, 3] = float("nan")
         csv_path = tmp_path / "with_nan.csv"
         df.to_csv(csv_path, index=False)
 
         model_dir = tmp_path / "models"
         model_dir.mkdir()
-        run_train(csv_path, model_dir)      # must not raise
+        run_train(csv_path, model_dir)
         assert (model_dir / "model.pkl").exists()
