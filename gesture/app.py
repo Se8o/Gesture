@@ -117,7 +117,7 @@ def _camera_loop(stop_event: threading.Event, background: bool) -> None:
             if landmarks is not None:
                 _draw_hand(frame, landmarks, h, w)
 
-            triggered = controller.execute(gesture) if gesture else False
+            triggered = controller.execute(gesture, confidence) if gesture else False
 
             if not background:
                 _draw_ui(frame, gesture, confidence, triggered)

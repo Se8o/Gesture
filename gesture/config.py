@@ -24,12 +24,12 @@ TRACKING_CONFIDENCE  = 0.7   # minimální spolehlivost sledování ruky (0.0–
 # ----- Predikce -----
 # Model vrátí název gesta pouze pokud je jeho pravděpodobnost >= tento práh.
 # Nižší hodnota = citlivější, ale více falešně pozitivních výsledků.
-PREDICTION_THRESHOLD = 0.75
+PREDICTION_THRESHOLD = 0.60
 
 # ----- Ovládání -----
 # Minimální prodleva (v sekundách) mezi dvěma po sobě jdoucími akcemi
 # stejného gesta. Brání opakovanému spouštění jedné klávesy při klidném držení ruky.
-GESTURE_COOLDOWN = 1.0
+GESTURE_COOLDOWN = 0.4
 
 # Režim ovládání:
 #   "scroll"   – gesta rolují stránkou myší (vhodné pro běh na pozadí, nahrazuje trackpad)
@@ -37,7 +37,7 @@ GESTURE_COOLDOWN = 1.0
 CONTROL_MODE = "scroll"
 
 # Počet jednotek scrollu na jedno gesto (platí pouze pro CONTROL_MODE="scroll")
-SCROLL_AMOUNT = 5
+SCROLL_AMOUNT = 10
 
 # ----- Settings override (written by setup_gui.py) -----
 # If settings.json exists in the project root, its values take precedence.

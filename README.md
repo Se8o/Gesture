@@ -21,12 +21,13 @@ pynput
 (odešle stisk klávesy)
 ```
 
-| Gesto | Klávesa | Použití |
+| Gesto | Akce | Použití |
 |---|---|---|
-| posun nahoru | ↑ | Hlasitost nahoru, předchozí snímek |
-| posun dolu | ↓ | Hlasitost dolů, další snímek |
-| posun doprava | → | Vpřed, další strana prezentace |
-| posun doleva | ← | Zpět, předchozí strana |
+| posun nahoru | ↑ / scroll nahoru | Hlasitost nahoru, předchozí snímek |
+| posun dolu | ↓ / scroll dolů | Hlasitost dolů, další snímek |
+| posun doprava | Ctrl+Tab | Přepnutí na pravý tab prohlížeče |
+| posun doleva | Ctrl+Shift+Tab | Přepnutí na levý tab prohlížeče |
+| pauza | Mezerník | Spuštění / pozastavení videa |
 
 ---
 
@@ -147,6 +148,7 @@ Pokud chceš nasbírat nová data (například pro rozšíření o další gesta
 
 ```bash
 # Nahraď "nazev_gesta" názvem gesta, které chceš nahrávat
+# Příklad: python ml/collect.py "pauza"
 python ml/collect.py "nazev_gesta"
 ```
 
@@ -192,7 +194,7 @@ Soubor `src/config.py` obsahuje nastavitelné konstanty:
 
 ## O datech
 
-Dataset obsahuje **4 117 snímků** čtyř gest:
+Dataset obsahuje **4 696 snímků** pěti gest:
 
 | Gesto | Počet snímků |
 |---|---|
@@ -200,6 +202,7 @@ Dataset obsahuje **4 117 snímků** čtyř gest:
 | posun dolu | 1 026 |
 | posun doprava | 1 023 |
 | posun doleva | 1 023 |
+| pauza | 579 |
 
 **Formát:** CSV, 64 sloupců – `label` + `x0,y0,z0,...,x20,y20,z20`
 (souřadnice 21 kloubů ruky normalizované na rozsah 0–1)
