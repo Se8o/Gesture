@@ -59,16 +59,16 @@ class TestTrainPipeline:
         encoder = joblib.load(tmp_path / "label_encoder.pkl")
         assert isinstance(encoder, LabelEncoder)
 
-    def test_encoder_knows_all_four_gestures(self, synthetic_csv, tmp_path):
+    def test_encoder_knows_all_five_gestures(self, synthetic_csv, tmp_path):
         run_train(synthetic_csv, tmp_path)
         encoder = joblib.load(tmp_path / "label_encoder.pkl")
-        expected = {"posun nahoru", "posun dolu", "posun doprava", "posun doleva"}
+        expected = {"posun nahoru", "posun dolu", "posun doprava", "posun doleva", "pauza"}
         assert set(encoder.classes_) == expected
 
     def test_model_achieves_decent_accuracy(self, synthetic_csv, tmp_path):
         """
         Synthetic data has clearly separated class means — a trained RF
-        should achieve > 70 % accuracy even on 160 samples.
+        should achieve > 70 % accuracy even on 200 samples.
         """
         run_train(synthetic_csv, tmp_path)
         model   = joblib.load(tmp_path / "model.pkl")
@@ -97,7 +97,7 @@ class TestTrainPipeline:
         scaler = joblib.load(tmp_path / "scaler.pkl")
         sample = np.random.rand(1, 63)
         proba  = model.predict_proba(scaler.transform(sample))
-        assert proba.shape == (1, 4)
+        assert proba.shape == (1, 5)
         assert abs(proba.sum() - 1.0) < 1e-6
 
 

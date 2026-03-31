@@ -11,8 +11,14 @@ import pytest
 
 # ── Synthetic dataset ──────────────────────────────────────────────────────────
 
-GESTURE_CLASSES = ["posun nahoru", "posun dolu", "posun doprava", "posun doleva"]
-N_PER_CLASS = 40          # 160 rows total — fast but big enough for sklearn
+GESTURE_CLASSES = [
+    "posun nahoru",
+    "posun dolu",
+    "posun doprava",
+    "posun doleva",
+    "pauza",
+]
+N_PER_CLASS = 40          # 200 rows total — fast but big enough for sklearn
 N_FEATURES  = 63          # 21 landmarks × 3 coords (x, y, z)
 
 
@@ -76,8 +82,8 @@ def mock_ml_models():
     # scaler.transform returns the input unchanged (already scaled)
     scaler.transform.side_effect = lambda x: np.array(x)
 
-    # model.predict_proba returns equal probabilities across 4 classes by default
-    proba = np.array([[0.25, 0.25, 0.25, 0.25]])
+    # model.predict_proba returns equal probabilities across 5 classes by default
+    proba = np.array([[0.20, 0.20, 0.20, 0.20, 0.20]])
     model.predict_proba.return_value = proba
 
     # encoder.inverse_transform returns a gesture name
