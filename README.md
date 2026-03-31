@@ -1,7 +1,7 @@
 # Gesture Remote Controller
 
 Aplikace pro ovládání počítače gesty ruky snímanými webkamerou.
-Rozpoznává 4 gesta pomocí modelu strojového učení (Random Forest) natrénovaného
+Rozpoznává 5 gest pomocí modelu strojového učení (Random Forest) natrénovaného
 na datech nasbíraných vlastní rukou.
 
 ---
@@ -18,7 +18,7 @@ Random Forest Classifier
 (předpoví gesto)
    ↓
 pynput
-(odešle stisk klávesy)
+(odešle stisk klávesy / scroll myši)
 ```
 
 | Gesto | Akce | Použití |
@@ -50,7 +50,7 @@ Gesture/
 │   ├── install.py           # Registrace autostartu
 │   └── uninstall.py         # Odstranění autostartu
 ├── data/
-│   └── dataset.csv          # Nasbíraná trénovací data (4 117 snímků)
+│   └── dataset.csv          # Nasbíraná trénovací data (4 999 snímků)
 ├── models/
 │   ├── hand_landmarker.task # MediaPipe model detekce ruky (předtrénovaný, Google)
 │   ├── model.pkl            # Natrénovaný Random Forest (generuje ml/train.py)
@@ -58,8 +58,9 @@ Gesture/
 │   └── label_encoder.pkl    # LabelEncoder (generuje ml/train.py)
 ├── notebooks/
 │   └── train_model.ipynb    # Google Colab notebook – celý ML postup
-├── tests/                   # Testovací sada (76 unit testů)
+├── tests/                   # Testovací sada (unit testy)
 ├── run.py                   # Vstupní bod aplikace
+├── start.bat                # Spouštěč pro Windows (instalace + spuštění jedním klikem)
 ├── pyproject.toml           # Konfigurace projektu a nástrojů
 └── requirements.txt         # Závislosti
 ```
@@ -73,23 +74,40 @@ Gesture/
 
 ## Požadavky
 
-- Python 3.9 nebo novější
+- **Python 3.9–3.11** (mediapipe nepodporuje Python 3.12 a novější)
 - Webkamera (vestavěná nebo USB)
 - Windows / macOS / Linux
 
 ---
 
-## Instalace a spuštění (bez IDE)
+## Instalace a spuštění
+
+### Windows – rychlé spuštění (bez IDE)
+
+Dvakrát klikni na soubor **`start.bat`** v kořenovém adresáři projektu.
+
+Skript automaticky:
+1. Ověří instalaci Pythonu a vypíše verzi
+2. Vytvoří virtuální prostředí `venv/`
+3. Nainstaluje všechny závislosti
+4. Spustí aplikaci
+
+Při dalším spuštění se přeskočí kroky, které jsou již hotové.
+
+> Pokud `pip install` selže, okno zůstane otevřené a zobrazí pokyny k opravě.
+> Nejčastější příčina: Python 3.12 nebo novější – nainstaluj Python 3.11.
+
+### Ruční instalace (všechny platformy)
 
 Všechny příkazy spouštěj z **kořenového adresáře projektu** (`Gesture/`).
 
-### 1. Vytvoření virtuálního prostředí
+#### 1. Vytvoření virtuálního prostředí
 
 ```bash
 python -m venv venv
 ```
 
-### 2. Aktivace virtuálního prostředí
+#### 2. Aktivace virtuálního prostředí
 
 **Windows:**
 ```bash
@@ -101,13 +119,13 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-### 3. Instalace závislostí
+#### 3. Instalace závislostí
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Trénování modelu
+#### 4. Trénování modelu
 
 ```bash
 python ml/train.py
@@ -115,7 +133,7 @@ python ml/train.py
 
 Výstup: `models/model.pkl`, `models/scaler.pkl`, `models/label_encoder.pkl`
 
-### 5. Spuštění aplikace
+#### 5. Spuštění aplikace
 
 **Normální režim** (okno s obrazem kamery):
 ```bash
@@ -124,14 +142,14 @@ python run.py
 Otevře se okno s obrazem z webkamery. Drž ruku před kamerou a prováděj gesta.
 Ukončení: stiskni klávesu `Q` v okně aplikace.
 
-**Režim na pozadí** (jako systémová extenze, nahrazuje trackpad):
+**Režim na pozadí** (ikona v liště, nahrazuje trackpad):
 ```bash
 python run.py --background
 ```
 Žádné okno. Ikona se zobrazí v menu liště (macOS) nebo systémové liště (Windows/Linux).
 Ukončení: pravý klik na ikonu → Ukončit.
 
-### 6. Automatické spouštění při přihlášení (volitelné)
+#### 6. Automatické spouštění při přihlášení (volitelné)
 
 ```bash
 python scripts/install.py
@@ -142,14 +160,34 @@ Odinstalace: `python scripts/uninstall.py`
 
 ---
 
-## Sběr vlastních dat
+## Průvodce nastavením (GUI)
 
-Pokud chceš nasbírat nová data (například pro rozšíření o další gesta):
+Grafický průvodce nastavením lze spustit příkazem:
 
 ```bash
-# Nahraď "nazev_gesta" názvem gesta, které chceš nahrávat
-# Příklad: python ml/collect.py "pauza"
+python gui/wizard.py
+```
+
+Umožňuje:
+- Vizuálně upravit všechna nastavení pomocí posuvníků
+- Spustit trénování modelu
+- Zobrazit stav datasetu a modelových souborů
+- Uložit nastavení do `settings.json`
+
+---
+
+## Sběr vlastních dat
+
+Pokud chceš nasbírat nová data (například pro změnu nebo přidání gesta):
+
+```bash
 python ml/collect.py "nazev_gesta"
+```
+
+Příklad:
+```bash
+python ml/collect.py "posun doleva"
+python ml/collect.py "posun doprava"
 ```
 
 Ovládání sběru:
@@ -161,6 +199,10 @@ Data se přidají do `data/dataset.csv`. Po sběru je nutné model znovu natrén
 ```bash
 python ml/train.py
 ```
+
+> Chceš-li gesto nahrát znovu od začátku, nejprve smaž jeho řádky z `data/dataset.csv`
+> (všechny řádky, kde první sloupec odpovídá názvu gesta), pak smaž `models/model.pkl`
+> a spusť sběr dat a trénování znovu.
 
 ---
 
@@ -179,35 +221,38 @@ Notebook `notebooks/train_model.ipynb` lze spustit v Google Colab:
 
 ## Konfigurace
 
-Soubor `src/config.py` obsahuje nastavitelné konstanty:
+Soubor `gesture/config.py` obsahuje nastavitelné konstanty. Hodnoty lze přepsat
+bez úpravy zdrojového kódu pomocí souboru `settings.json` v kořenovém adresáři
+(vytváří ho průvodce nastavením `gui/wizard.py`).
 
 | Proměnná | Výchozí | Popis |
 |---|---|---|
 | `CAMERA_INDEX` | `0` | Index webkamery (0 = vestavěná) |
 | `DETECTION_CONFIDENCE` | `0.7` | Minimální spolehlivost detekce ruky |
+| `TRACKING_CONFIDENCE` | `0.7` | Minimální spolehlivost sledování ruky |
 | `PREDICTION_THRESHOLD` | `0.75` | Minimální jistota modelu pro spuštění akce |
-| `GESTURE_COOLDOWN` | `1.0` | Prodleva (s) mezi opakováním stejného gesta |
+| `GESTURE_COOLDOWN` | `0.4` | Prodleva (s) mezi opakováním stejného gesta |
 | `CONTROL_MODE` | `"scroll"` | Režim ovládání: `"scroll"` (myš) nebo `"keyboard"` (šipky) |
-| `SCROLL_AMOUNT` | `5` | Počet jednotek scrollu na jedno gesto |
+| `SCROLL_AMOUNT` | `10` | Počet jednotek scrollu na jedno gesto |
 
 ---
 
 ## O datech
 
-Dataset obsahuje **4 696 snímků** pěti gest:
+Dataset obsahuje **4 999 snímků** pěti gest:
 
 | Gesto | Počet snímků |
 |---|---|
-| posun nahoru | 1 045 |
-| posun dolu | 1 026 |
-| posun doprava | 1 023 |
-| posun doleva | 1 023 |
+| posun nahoru | 1 061 |
+| posun dolu | 1 142 |
+| posun doprava | 1 111 |
+| posun doleva | 1 106 |
 | pauza | 579 |
 
 **Formát:** CSV, 64 sloupců – `label` + `x0,y0,z0,...,x20,y20,z20`
 (souřadnice 21 kloubů ruky normalizované na rozsah 0–1)
 
-**Původ dat:** Data byla sesbírána vlastní rukou pomocí `scripts/collect_data.py`.
+**Původ dat:** Data byla sesbírána vlastní rukou pomocí `ml/collect.py`.
 MediaPipe HandLandmarker detekoval klouby ruky v každém snímku webkamery.
 Nahrávání probíhalo v různých vzdálenostech od kamery a různých pozicích ruky.
 
@@ -215,18 +260,21 @@ Nahrávání probíhalo v různých vzdálenostech od kamery a různých pozicí
 
 ## Předzpracování dat
 
-Podrobný postup je zdokumentován v `notebooks/train_model.ipynb` (Kroky 3, 4, 6) a provádí ho i `train.py`:
+Podrobný postup je zdokumentován v `notebooks/train_model.ipynb` a provádí ho i `ml/train.py`:
 
 | Krok | Metoda | Popis |
 |---|---|---|
 | Čištění | `dropna()` | Odstranění řádků s NaN – nastane, když MediaPipe ruku nenašel |
-| Kódování | `LabelEncoder` | Převod textových labelů na čísla (abecedně: doleva=0, doprava=1, dolu=2, nahoru=3) |
+| Kódování | `LabelEncoder` | Převod textových labelů na čísla (abecedně: doleva=0, doprava=1, dolu=2, nahoru=3, pauza=4) |
 | Škálování | `StandardScaler` | Normalizace příznaků na průměr=0, odchylka=1; `fit` pouze na trénovacích datech, aby nedošlo k data leakage |
 
 ---
 
 ## Poznámka ke spuštění na Windows
 
-Pokud `pip install` selže s chybou týkající se OpenCV nebo MediaPipe, nainstaluj
+MediaPipe vyžaduje **Python 3.11 nebo starší**. Python 3.12 a 3.13 nejsou podporovány.
+Pokud `pip install` selže, zkontroluj verzi Pythonu příkazem `python --version`.
+
+Pokud se zobrazí chyba týkající se OpenCV nebo Visual C++, nainstaluj
 [Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe)
 a zopakuj instalaci.
