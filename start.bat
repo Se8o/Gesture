@@ -20,11 +20,14 @@ echo.
 python --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Python was not found.
-    echo Please install Python 3.9 or newer from https://www.python.org/downloads/
+    echo Please install Python 3.9-3.11 from https://www.python.org/downloads/
     echo Make sure to check "Add Python to PATH" during installation.
     pause
     exit /b 1
 )
+echo Detected: && python --version
+echo NOTE: mediapipe requires Python 3.8-3.11. Python 3.12+ is NOT supported.
+echo.
 
 :: ── 2. Create virtual environment if it does not exist ───────────────────────
 if not exist "venv\Scripts\activate.bat" (
@@ -45,9 +48,14 @@ call venv\Scripts\activate.bat
 
 :: ── 4. Install / update dependencies ─────────────────────────────────────────
 echo [2/4] Installing dependencies (this may take a minute on first run)...
-pip install -r requirements.txt --quiet
+pip install -r requirements.txt
 if errorlevel 1 (
-    echo [ERROR] Failed to install dependencies.
+    echo.
+    echo [ERROR] Failed to install dependencies. See the error above.
+    echo Common fixes:
+    echo   - Use Python 3.11 (mediapipe does not support 3.12+^)
+    echo   - Check your internet connection
+    echo   - Run as Administrator if you see permission errors
     pause
     exit /b 1
 )
