@@ -75,12 +75,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # System libraries required by OpenCV and MediaPipe on headless Ubuntu
+      # System libraries required by OpenCV, MediaPipe, and pynput on headless Ubuntu
       - name: Install system dependencies
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
-            libgl1 libglib2.0-0 libsm6 libxrender1 libxext6
+            libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 xvfb
 
       - uses: actions/setup-python@v5
         with:
@@ -98,7 +98,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest tests/ \
+          xvfb-run --auto-servernum pytest tests/ \
             --cov=gesture --cov=ml --cov=gui \
             --cov-report=term-missing \
             --cov-report=xml:coverage.xml
