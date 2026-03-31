@@ -1,33 +1,33 @@
 #!/usr/bin/env python3
 """
-Vstupní bod aplikace Gesture Remote Controller.
+Entry point for Gesture Remote Controller.
 
-Spuštění – normální režim (okno s kamerou):
+Normal mode (camera window):
     python run.py
 
-Spuštění – na pozadí (ikona v liště, žádné okno):
+Background mode (system tray, no window):
     python run.py --background
 
-Před prvním spuštěním je nutné natrénovat model:
-    python train.py
+The model must be trained before the first run:
+    python ml/train.py
 """
 import sys
 import os
 import argparse
 
-# Přidáme kořenový adresář projektu do sys.path, aby fungovaly importy z balíčku src/
+# Add the project root to sys.path so imports from the gesture/ package work
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from gesture.app import run
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Gesture Remote Controller – ovládání PC gesty ruky"
+        description="Gesture Remote Controller — control your PC with hand gestures"
     )
     parser.add_argument(
         "--background",
         action="store_true",
-        help="Spustí aplikaci na pozadí bez okna kamery (ovládání přes ikonu v liště)",
+        help="Run in background mode without a camera window (controlled via system tray icon)",
     )
     args = parser.parse_args()
     run(background=args.background)

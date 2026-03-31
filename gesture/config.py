@@ -1,46 +1,46 @@
 """
-Konfigurační konstanty aplikace.
-Všechny cesty jsou absolutní (odvozené od umístění tohoto souboru),
-takže aplikace funguje bez ohledu na pracovní adresář.
+Application configuration constants.
+All paths are absolute (derived from this file's location),
+so the app works regardless of the working directory.
 """
 import os
 
-# Kořenový adresář projektu (o jednu úroveň výše než tento soubor)
+# Root directory of the project (one level above this file)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# ----- Cesty k souborům -----
+# ----- File paths -----
 HAND_LANDMARKER_PATH = os.path.join(BASE_DIR, "models", "hand_landmarker.task")
 MODEL_PATH           = os.path.join(BASE_DIR, "models", "model.pkl")
 SCALER_PATH          = os.path.join(BASE_DIR, "models", "scaler.pkl")
 ENCODER_PATH         = os.path.join(BASE_DIR, "models", "label_encoder.pkl")
 
-# ----- Kamera -----
-CAMERA_INDEX = 0  # 0 = výchozí (vestavěná) webkamera; změň na 1, 2 … pro jinou
+# ----- Camera -----
+CAMERA_INDEX = 0  # 0 = default (built-in) webcam; change to 1, 2 … for another camera
 
-# ----- MediaPipe -----
-DETECTION_CONFIDENCE = 0.7   # minimální spolehlivost detekce ruky (0.0–1.0)
-TRACKING_CONFIDENCE  = 0.7   # minimální spolehlivost sledování ruky (0.0–1.0)
+# ----- MediaPipe hand detection thresholds -----
+DETECTION_CONFIDENCE = 0.7   # minimum confidence to detect a hand (0.0 – 1.0)
+TRACKING_CONFIDENCE  = 0.7   # minimum confidence to keep tracking a hand (0.0 – 1.0)
 
-# ----- Predikce -----
-# Model vrátí název gesta pouze pokud je jeho pravděpodobnost >= tento práh.
-# Nižší hodnota = citlivější, ale více falešně pozitivních výsledků.
+# ----- Gesture prediction -----
+# The model returns a gesture name only when its probability is >= this threshold.
+# Lower value = more sensitive but more false positives.
 PREDICTION_THRESHOLD = 0.75
 
-# ----- Ovládání -----
-# Minimální prodleva (v sekundách) mezi dvěma po sobě jdoucími akcemi
-# stejného gesta. Brání opakovanému spouštění jedné klávesy při klidném držení ruky.
+# ----- Action control -----
+# Minimum delay (in seconds) between two consecutive actions for the same gesture.
+# Prevents the same key from firing repeatedly while the hand is held still.
 GESTURE_COOLDOWN = 0.4
 
-# Režim ovládání:
-#   "scroll"   – gesta rolují stránkou myší (vhodné pro běh na pozadí, nahrazuje trackpad)
-#   "keyboard" – gesta odesílají šipkové klávesy (vhodné pro prezentace, videopřehrávač)
+# Control mode:
+#   "scroll"   – gestures scroll the page with the mouse (good for background mode)
+#   "keyboard" – gestures send arrow keys (good for presentations / video players)
 CONTROL_MODE = "scroll"
 
-# Počet jednotek scrollu na jedno gesto (platí pouze pro CONTROL_MODE="scroll")
+# Number of scroll units per gesture (only used when CONTROL_MODE = "scroll")
 SCROLL_AMOUNT = 10
 
-# ----- Settings override (written by setup_gui.py) -----
-# If settings.json exists in the project root, its values take precedence.
+# ----- Settings override (written by gui/wizard.py) -----
+# If settings.json exists in the project root, its values override the defaults above.
 import json as _json
 _settings_file = os.path.join(BASE_DIR, "settings.json")
 if os.path.exists(_settings_file):

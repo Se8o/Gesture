@@ -1,10 +1,10 @@
 """
-Systémová ikona v liště pro Gesture Remote Controller.
+System tray icon for Gesture Remote Controller.
 
-Zobrazí ikonu v menu liště (macOS) nebo v systémové liště (Windows / Linux)
-a umožní aplikaci běžet na pozadí bez viditelného okna.
+Displays an icon in the menu bar (macOS) or system tray (Windows / Linux)
+so the application can run in the background without a visible window.
 
-Vyžaduje balíčky: pystray, Pillow
+Requires: pystray, Pillow
 """
 import threading
 
@@ -12,51 +12,51 @@ import pystray
 from PIL import Image, ImageDraw
 
 
-def _vytvor_ikonu() -> Image.Image:
-    """Nakreslí jednoduchou ikonu ruky (64 × 64 px) pro systémovou lištu."""
-    vel = 64
-    img = Image.new("RGBA", (vel, vel), (0, 0, 0, 0))
+def _create_icon() -> Image.Image:
+    """Draw a simple hand icon (64 × 64 px) for the system tray."""
+    size = 64
+    img  = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    modra = (60, 120, 220, 255)
+    blue = (60, 120, 220, 255)
 
-    # Dlaň
-    draw.rounded_rectangle([10, 26, 54, 58], radius=9, fill=modra)
+    # Palm
+    draw.rounded_rectangle([10, 26, 54, 58], radius=9, fill=blue)
 
-    # Pět prstů
+    # Five fingers
     for x in [10, 18, 26, 34, 42]:
-        draw.rounded_rectangle([x, 6, x + 7, 32], radius=3, fill=modra)
+        draw.rounded_rectangle([x, 6, x + 7, 32], radius=3, fill=blue)
 
     return img
 
 
 class SystemovyTray:
     """
-    Spravuje ikonu aplikace v systémové liště.
+    Manages the application's system tray icon.
 
-    Použití
-    -------
+    Usage
+    -----
         stop = threading.Event()
         tray = SystemovyTray(stop)
-        tray.spustit()   # blokující – volej z hlavního vlákna
+        tray.spustit()   # blocking — call from the main thread
     """
 
     def __init__(self, stop_event: threading.Event):
-        self._stop = stop_event
+        self._stop = stop_event   # shared event to signal the camera thread to stop
         self._icon = None
 
-    def _ukoncit(self, icon, item):
-        """Callback pro položku menu 'Ukončit'."""
-        self._stop.set()
-        icon.stop()
+    def _quit(self, icon, item):
+        """Callback for the 'Quit' menu item."""
+        self._stop.set()   # tell the camera thread to stop
+        icon.stop()        # stop the tray icon loop
 
     def spustit(self) -> None:
-        """Zobrazí ikonu v liště a blokuje hlavní vlákno do zvolení Ukončit."""
-        obr = _vytvor_ikonu()
-        menu = pystray.Menu(
-            pystray.MenuItem("Gesture Controller", None, enabled=False),
+        """Show the tray icon and block the main thread until the user clicks Quit."""
+        image = _create_icon()
+        menu  = pystray.Menu(
+            pystray.MenuItem("Gesture Controller", None, enabled=False),  # title (disabled)
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Ukončit", self._ukoncit),
+            pystray.MenuItem("Quit", self._quit),
         )
-        self._icon = pystray.Icon("gesture_controller", obr, "Gesture Controller", menu)
-        self._icon.run()
+        self._icon = pystray.Icon("gesture_controller", image, "Gesture Controller", menu)
+        self._icon.run()   # blocks until icon.stop() is called

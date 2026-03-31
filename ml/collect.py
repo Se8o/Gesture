@@ -1,19 +1,20 @@
 """
-Skript pro sběr dat gest ruky pomocí webkamery.
-Data jsou ukládána do CSV souboru pro pozdější trénování ML modelu.
+Hand gesture data collection script using the webcam.
+Collected data is saved to a CSV file for later ML model training.
 
-Poznámka: Skript používá nové MediaPipe Tasks API (verze 0.10+),
-          které nahradilo starší mp.solutions rozhraní.
+Note: uses the new MediaPipe Tasks API (version 0.10+),
+      which replaced the older mp.solutions interface.
 
-Spuštění (z kořenového adresáře projektu):
+Usage (from the project root):
     python ml/collect.py "posun nahoru"
     python ml/collect.py "posun dolu"
     python ml/collect.py "posun doprava"
     python ml/collect.py "posun doleva"
+    python ml/collect.py "pauza"
 
-Ovládání:
-  's' ... začít/zastavit nahrávání snímků do CSV
-  'q' ... ukončit program
+Controls:
+  's' ... start / stop recording frames to CSV
+  'q' ... quit the program
 """
 
 import sys
@@ -26,37 +27,36 @@ import csv
 import time
 
 # ============================================================
-#  Zpracování argumentu příkazové řádky
+#  Command-line argument — gesture name to record
 # ============================================================
 
-# Název gesta lze zadat jako argument: python ml/collect.py "posun nahoru"
-# Pokud argument není zadán, použije se výchozí hodnota.
+# The gesture name can be passed as an argument: python ml/collect.py "posun nahoru"
+# If no argument is given, the default value below is used.
 if len(sys.argv) >= 2:
-    NAZEV_GESTA = sys.argv[1]
+    GESTURE_NAME = sys.argv[1]
 else:
-    NAZEV_GESTA = "posun dolu"   # výchozí hodnota – změň podle potřeby
+    GESTURE_NAME = "posun dolu"   # default — change as needed
 
 # ============================================================
-#  Cesty k souborům (absolutní, odvozené od tohoto souboru)
+#  File paths (absolute, derived from this file's location)
 # ============================================================
 
-# Kořenový adresář projektu je o dvě úrovně výše než tento skript
-# (Gesture/ml/collect.py → Gesture/)
-ROOT_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Project root is two levels above this script (ml/collect.py → project root)
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Cesta k předtrénovanému modelu detekce ruky
+# Path to the pre-trained MediaPipe hand detection model
 MODEL_PATH = os.path.join(ROOT_DIR, "models", "hand_landmarker.task")
 
-# Cesta k výstupnímu CSV souboru se sesbíranými daty
-SOUBOR_CSV = os.path.join(ROOT_DIR, "data", "dataset.csv")
+# Path to the output CSV file where collected samples are appended
+CSV_FILE = os.path.join(ROOT_DIR, "data", "dataset.csv")
 
 # ============================================================
-#  Konfigurační konstanty
+#  Configuration constants
 # ============================================================
 
-INDEX_KAMERY               = 0    # 0 = vestavěná webkamera
-MIN_SPOLEHLIVOST_DETEKCE   = 0.7
-MIN_SPOLEHLIVOST_SLEDOVANI = 0.7
+CAMERA_INDEX               = 0    # 0 = built-in webcam
+MIN_DETECTION_CONFIDENCE   = 0.7
+MIN_TRACKING_CONFIDENCE    = 0.7
 
 MODEL_URL = (
     "https://storage.googleapis.com/mediapipe-models/"
@@ -64,177 +64,176 @@ MODEL_URL = (
 )
 
 # ============================================================
-#  Kontrola existence souborů
+#  Check that the MediaPipe model file exists
 # ============================================================
 
 if not os.path.isfile(MODEL_PATH):
-    print("CHYBA: Soubor modelu '" + MODEL_PATH + "' nebyl nalezen.")
-    print("Stáhni ho ručně příkazem:")
+    print("ERROR: Hand landmarker model not found: " + MODEL_PATH)
+    print("Download it manually with:")
     print("  curl -L -o models/hand_landmarker.task \"" + MODEL_URL + "\"")
     sys.exit(1)
 
-# Vytvoříme složku data/, pokud ještě neexistuje
+# Create the data/ folder if it does not exist yet
 os.makedirs(os.path.join(ROOT_DIR, "data"), exist_ok=True)
 
 # ============================================================
-#  Definice spojení kloubů ruky pro kreslení kostry
+#  Hand skeleton connections for drawing
 # ============================================================
 
-# MediaPipe čísluje 21 bodů ruky (0 = zápěstí, 1–20 = klouby prstů).
-# Každá dvojice čísel (a, b) znamená: nakresli čáru mezi bodem a a bodem b.
+# Each pair (a, b) means: draw a line from joint a to joint b.
+# MediaPipe numbers 21 hand joints (0 = wrist, 1-20 = finger joints).
 HAND_CONNECTIONS = [
-    (0, 1),  (1, 2),  (2, 3),  (3, 4),    # palec
-    (0, 5),  (5, 6),  (6, 7),  (7, 8),    # ukazovák
-    (0, 9),  (9, 10), (10, 11),(11, 12),   # prostředník
-    (0, 13),(13, 14), (14, 15),(15, 16),   # prsteník
-    (0, 17),(17, 18), (18, 19),(19, 20),   # malík
-    (5, 9),  (9, 13), (13, 17)             # příčné spojení dlaně
+    (0, 1),  (1, 2),  (2, 3),  (3, 4),    # thumb
+    (0, 5),  (5, 6),  (6, 7),  (7, 8),    # index finger
+    (0, 9),  (9, 10), (10, 11),(11, 12),  # middle finger
+    (0, 13),(13, 14), (14, 15),(15, 16),  # ring finger
+    (0, 17),(17, 18), (18, 19),(19, 20),  # pinky
+    (5, 9),  (9, 13), (13, 17)            # palm cross-connections
 ]
 
 # ============================================================
-#  Inicializace detektoru ruky (MediaPipe Tasks API)
+#  Initialise the MediaPipe hand detector (Tasks API)
 # ============================================================
 
 base_options = mp_python.BaseOptions(model_asset_path=MODEL_PATH)
 
-# running_mode=VIDEO → detektor si udržuje stav a sleduje ruku průběžně
+# VIDEO mode keeps state between frames for smoother tracking
 options = mp_vision.HandLandmarkerOptions(
     base_options=base_options,
     running_mode=mp_vision.RunningMode.VIDEO,
     num_hands=1,
-    min_hand_detection_confidence=MIN_SPOLEHLIVOST_DETEKCE,
-    min_hand_presence_confidence=MIN_SPOLEHLIVOST_SLEDOVANI,
-    min_tracking_confidence=MIN_SPOLEHLIVOST_SLEDOVANI
+    min_hand_detection_confidence=MIN_DETECTION_CONFIDENCE,
+    min_hand_presence_confidence=MIN_TRACKING_CONFIDENCE,
+    min_tracking_confidence=MIN_TRACKING_CONFIDENCE
 )
-detektor = mp_vision.HandLandmarker.create_from_options(options)
+detector = mp_vision.HandLandmarker.create_from_options(options)
 
 # ============================================================
-#  Příprava CSV souboru
+#  Prepare the CSV output file
 # ============================================================
 
-# Hlavička CSV: label, x0, y0, z0, x1, y1, z1, ..., x20, y20, z20 (64 sloupců)
-hlavicka = ["label"]
+# Header: label column + x,y,z for each of the 21 hand joints (64 columns total)
+header = ["label"]
 for i in range(21):
-    hlavicka.append("x" + str(i))
-    hlavicka.append("y" + str(i))
-    hlavicka.append("z" + str(i))
+    header.append("x" + str(i))
+    header.append("y" + str(i))
+    header.append("z" + str(i))
 
-soubor_existuje = os.path.isfile(SOUBOR_CSV)
+file_exists = os.path.isfile(CSV_FILE)
 
-# Otevřeme soubor v režimu "append" – data z předchozích relací se zachovají
-csv_soubor    = open(SOUBOR_CSV, mode="a", newline="", encoding="utf-8")
-csv_zapisovac = csv.writer(csv_soubor)
+# Open in append mode so data from previous sessions is preserved
+csv_file   = open(CSV_FILE, mode="a", newline="", encoding="utf-8")
+csv_writer = csv.writer(csv_file)
 
-if not soubor_existuje:
-    csv_zapisovac.writerow(hlavicka)
+# Write the header only if the file is new
+if not file_exists:
+    csv_writer.writerow(header)
 
 # ============================================================
-#  Otevření webkamery
+#  Open the webcam
 # ============================================================
 
-kamera = cv2.VideoCapture(INDEX_KAMERY)
-if not kamera.isOpened():
-    print("CHYBA: Nelze otevřít kameru s indexem", INDEX_KAMERY)
-    csv_soubor.close()
-    detektor.close()
+camera = cv2.VideoCapture(CAMERA_INDEX)
+if not camera.isOpened():
+    print("ERROR: Cannot open camera with index", CAMERA_INDEX)
+    csv_file.close()
+    detector.close()
     sys.exit(1)
 
 # ============================================================
-#  Stavové proměnné
+#  State variables
 # ============================================================
 
-nahravani_aktivni = False
-pocet_ulozenych   = 0
-cas_start         = time.time()
+recording  = False    # True when actively saving frames to CSV
+saved      = 0        # total frames saved in this session
+start_time = time.time()
 
 # ============================================================
-#  Hlavní smyčka
+#  Main loop
 # ============================================================
 
-print("Program spuštěn.")
-print("  Gesto k nahrání:", NAZEV_GESTA)
-print("  Stiskni 's' pro zahájení/zastavení nahrávání.")
-print("  Stiskni 'q' pro ukončení programu.")
+print("Program started.")
+print("  Gesture to record:", GESTURE_NAME)
+print("  Press 's' to start/stop recording.")
+print("  Press 'q' to quit.")
 
 while True:
-    uspech, snimek = kamera.read()
-    if not uspech:
-        print("CHYBA: Nepodařilo se načíst snímek z kamery.")
+    ok, frame = camera.read()
+    if not ok:
+        print("ERROR: Failed to read frame from camera.")
         break
 
-    # Horizontálně překlopíme obraz – funguje jako zrcadlo
-    snimek     = cv2.flip(snimek, 1)
-    snimek_rgb = cv2.cvtColor(snimek, cv2.COLOR_BGR2RGB)
+    # Flip horizontally so the image acts as a mirror
+    frame     = cv2.flip(frame, 1)
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    # Časové razítko musí být unikátní a stále rostoucí (požadavek VIDEO módu)
-    timestamp_ms = int((time.time() - cas_start) * 1000)
-    mp_image     = mp.Image(image_format=mp.ImageFormat.SRGB, data=snimek_rgb)
-    vysledek     = detektor.detect_for_video(mp_image, timestamp_ms)
+    # Timestamp must be unique and monotonically increasing (VIDEO mode requirement)
+    timestamp_ms = int((time.time() - start_time) * 1000)
+    mp_image     = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame_rgb)
+    result       = detector.detect_for_video(mp_image, timestamp_ms)
 
-    if vysledek.hand_landmarks:
-        ruka_body       = vysledek.hand_landmarks[0]
-        vyska, sirka, _ = snimek.shape
+    if result.hand_landmarks:
+        hand   = result.hand_landmarks[0]
+        h, w, _ = frame.shape
 
-        # Kreslení bílé kostry ruky
+        # Draw the white hand skeleton
         for start_idx, end_idx in HAND_CONNECTIONS:
-            start_bod = ruka_body[start_idx]
-            end_bod   = ruka_body[end_idx]
-            start_px  = (int(start_bod.x * sirka), int(start_bod.y * vyska))
-            end_px    = (int(end_bod.x * sirka),   int(end_bod.y * vyska))
-            cv2.line(snimek, start_px, end_px, (255, 255, 255), 2)
+            s = hand[start_idx]
+            e = hand[end_idx]
+            cv2.line(frame,
+                     (int(s.x * w), int(s.y * h)),
+                     (int(e.x * w), int(e.y * h)),
+                     (255, 255, 255), 2)
 
-        # Zelené tečky na každý kloub
-        for bod in ruka_body:
-            px = (int(bod.x * sirka), int(bod.y * vyska))
-            cv2.circle(snimek, px, 5, (0, 255, 0), -1)
+        # Draw green dots on each joint
+        for lm in hand:
+            cv2.circle(frame, (int(lm.x * w), int(lm.y * h)), 5, (0, 255, 0), -1)
 
-        # Zápis souřadnic do CSV (jen při aktivním nahrávání)
-        if nahravani_aktivni:
-            # Řádek: název_gesta, x0, y0, z0, x1, y1, z1, ... (64 hodnot)
-            radek = [NAZEV_GESTA]
-            for bod in ruka_body:
-                radek.append(bod.x)
-                radek.append(bod.y)
-                radek.append(bod.z)
-            csv_zapisovac.writerow(radek)
-            # Okamžité vyprázdnění bufferu – data se neztrátí při pádu programu
-            csv_soubor.flush()
-            pocet_ulozenych = pocet_ulozenych + 1
+        # Save joint coordinates to CSV when recording is active
+        if recording:
+            row = [GESTURE_NAME]
+            for lm in hand:
+                row.append(lm.x)
+                row.append(lm.y)
+                row.append(lm.z)
+            csv_writer.writerow(row)
+            csv_file.flush()   # flush immediately so data is not lost on crash
+            saved += 1
 
-    # Informační text v okně
-    if nahravani_aktivni:
-        stav_text   = "NAHRAVA SE: " + NAZEV_GESTA + "  [snimky: " + str(pocet_ulozenych) + "]"
-        barva_textu = (0, 0, 255)    # červená = probíhá nahrávání
+    # Status text overlay
+    if recording:
+        status = "RECORDING: " + GESTURE_NAME + "  [frames: " + str(saved) + "]"
+        color  = (0, 0, 255)    # red = recording in progress
     else:
-        stav_text   = "POZASTAVENO – stiskni 'S' pro start"
-        barva_textu = (0, 255, 0)    # zelená = čekáme na pokyn
+        status = "PAUSED — press 'S' to start"
+        color  = (0, 255, 0)    # green = waiting for input
 
-    cv2.putText(snimek, stav_text, (10, 35),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.8, barva_textu, 2)
-    cv2.putText(snimek, "'S' = start/stop  |  'Q' = konec", (10, snimek.shape[0] - 10),
+    cv2.putText(frame, status, (10, 35),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+    cv2.putText(frame, "'S' = start/stop  |  'Q' = quit", (10, frame.shape[0] - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
 
-    cv2.imshow("Sbirani dat – " + NAZEV_GESTA, snimek)
+    cv2.imshow("Data collection — " + GESTURE_NAME, frame)
 
-    klavesa = cv2.waitKey(1) & 0xFF
-    if klavesa == ord("q"):
-        print("Ukončuji program...")
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord("q"):
+        print("Quitting...")
         break
-    if klavesa == ord("s"):
-        nahravani_aktivni = not nahravani_aktivni
-        if nahravani_aktivni:
-            print("Nahrávání ZAHÁJENO – gesto:", NAZEV_GESTA)
+    if key == ord("s"):
+        recording = not recording
+        if recording:
+            print("Recording STARTED — gesture:", GESTURE_NAME)
         else:
-            print("Nahrávání POZASTAVENO. Celkem uloženo snímků:", pocet_ulozenych)
+            print("Recording PAUSED. Total frames saved:", saved)
 
 # ============================================================
-#  Úklid po ukončení smyčky
+#  Clean up
 # ============================================================
 
-kamera.release()
+camera.release()
 cv2.destroyAllWindows()
-csv_soubor.close()
-detektor.close()
+csv_file.close()
+detector.close()
 
-print("Program ukončen. Data uložena do souboru:", SOUBOR_CSV)
-print("Celkem uloženo snímků v této relaci:", pocet_ulozenych)
+print("Program finished. Data saved to:", CSV_FILE)
+print("Total frames recorded this session:", saved)
