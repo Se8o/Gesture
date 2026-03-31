@@ -15,7 +15,7 @@ SCALER_PATH          = os.path.join(BASE_DIR, "models", "scaler.pkl")
 ENCODER_PATH         = os.path.join(BASE_DIR, "models", "label_encoder.pkl")
 
 # ----- Kamera -----
-CAMERA_INDEX = 1  # 0 = výchozí (vestavěná) webkamera; změň na 1, 2 … pro jinou
+CAMERA_INDEX = 0  # 0 = výchozí (vestavěná) webkamera; změň na 1, 2 … pro jinou
 
 # ----- MediaPipe -----
 DETECTION_CONFIDENCE = 0.7   # minimální spolehlivost detekce ruky (0.0–1.0)
